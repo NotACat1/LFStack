@@ -3,5 +3,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="LFStack/LFStack.vcxproj" />
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Tests.ThreadCounter/Tests.ThreadCounter.vcxproj" />
+  </Folder>
+  <Project Path="LFStack/LFStack.vcxproj" Id="62088b9b-c6e0-45bf-85fd-fe68eb5bd00a" />
 </Solution>
