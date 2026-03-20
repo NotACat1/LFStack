@@ -4,7 +4,7 @@
     <Platform Name="x86" />
   </Configurations>
   <Folder Name="/Tests/">
-    <Project Path="Tests/Tests.ThreadCounter/Tests.ThreadCounter.vcxproj" />
+    <Project Path="Tests/Tests.CounterReclamationStack/Tests.CounterReclamationStack.vcxproj" Id="f8dda52d-7e59-4dd5-9668-bf9b0a821a27" />
   </Folder>
   <Project Path="LFStack/LFStack.vcxproj" Id="62088b9b-c6e0-45bf-85fd-fe68eb5bd00a" />
 </Solution>
