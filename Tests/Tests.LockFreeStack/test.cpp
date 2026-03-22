@@ -27,7 +27,8 @@ protected:
 using StackImplementations = ::testing::Types<
     LFStack_ThreadCounter<int>,
     LFStack_HazardPtr<int>,
-    LFStack_SplitRefCount<int>
+    LFStack_SplitRefCount<int>,
+    LFStack_AtomicSharedPtr<int>
 >;
 
 // Register the typed test suite
