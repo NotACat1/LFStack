@@ -5,6 +5,7 @@
   </Configurations>
   <Folder Name="/Tests/">
     <Project Path="Tests/Tests.CounterReclamationStack/Tests.CounterReclamationStack.vcxproj" Id="f8dda52d-7e59-4dd5-9668-bf9b0a821a27" />
+    <Project Path="Tests/Tests.HazardPointerStack/Tests.HazardPointerStack.vcxproj" Id="ba7bf5c7-328f-4952-8691-bbb67b1ddf3c" />
   </Folder>
   <Project Path="LFStack/LFStack.vcxproj" Id="62088b9b-c6e0-45bf-85fd-fe68eb5bd00a" />
 </Solution>
