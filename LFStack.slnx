@@ -3,5 +3,8 @@
     <Platform Name="x64" />
     <Platform Name="x86" />
   </Configurations>
-  <Project Path="LFStack/LFStack.vcxproj" />
+  <Folder Name="/Tests/">
+    <Project Path="Tests/Tests.LockFreeStack/Tests.LockFreeStack.vcxproj" Id="3816306f-0b7c-4b1c-bc07-70292a96d468" />
+  </Folder>
+  <Project Path="LFStack/LFStack.vcxproj" Id="62088b9b-c6e0-45bf-85fd-fe68eb5bd00a" />
 </Solution>
