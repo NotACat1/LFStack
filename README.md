@@ -1,71 +1,80 @@
-# Lock-Free Stack: Memory Reclamation Strategies
+# AppFastClusterCPP
 
 ![C++](https://img.shields.io/badge/C%2B%2B-20-blue.svg)
 ![Build](https://img.shields.io/badge/build-passing-brightgreen.svg)
 ![Tests](https://img.shields.io/badge/tests-GTest-orange.svg)
+![Benchmark](https://img.shields.io/badge/benchmark-Google%20Benchmark-blue)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
-## Project Overview
+## Project Description
 
-This project is a study and reference implementation of lock-free stacks in C++. The primary focus is on solving the classical ABA problem and ensuring safe memory reclamation in a concurrent environment.
+This research project focuses on low-level optimization of classical machine learning algorithms (DBSCAN, K-Means, radius search) in C++ for large-scale data processing.
 
-The repository provides a “golden set” of classical algorithms implemented in modern C++, along with a comparative performance analysis using Google Benchmark.
+The main goal is to analyze the impact of modern architectural patterns (Data-Oriented Design), vectorization (SIMD), and multithreading (OpenMP) on computational throughput. The project demonstrates how proper memory organization and the choice of data structures (KD-Tree) can significantly outperform baseline implementations in terms of performance.
 
-## 🛠 Implemented Strategies
+## Implemented Functionality
 
-### 1. `LFStack_ThreadCounter` (Thread Counting)
+### Machine Learning Algorithms
 
-- **Method:** Counting active threads within the `pop()` operation.
-- **Features:** The simplest and fastest implementation.
-- **Limitations:** Prone to memory bloat. If one of the reading threads is preempted or goes to sleep, it blocks node reclamation for all other threads.
+- **Radius Search:** Brute-force and KD-Tree (single and batch modes).
+- **DBSCAN:** Clustering based on full search and spatial partitioning (KD-Tree).
+- **K-Means:** Clustering with dynamic adjustment of the number of points (N), clusters (K), and dimensionality (D).
 
-### 2. `LFStack_HazardPtr` (Hazard Pointers)
+### Distance Metrics
 
-- **Method:** Using Hazard Pointers.
-- **Features:** Each thread publishes a globally visible “announcement” (pointer) to the node it is currently working with. A node is guaranteed not to be deleted while at least one hazard pointer references it. Provides strong safety guarantees and strict memory management.
+- Euclidean distance and squared Euclidean distance.
+- Manhattan distance.
+- Chebyshev distance.
+- Cosine distance.
 
-### 3. `LFStack_SplitRefCount` (Split Reference Counting)
+### Memory Layout Patterns
 
-- **Method:** Internal and external counters.
-- **Features:** Each node maintains two counters. The external counter (as part of the atomic `head` pointer) is incremented on every access, while the internal counter is decremented when work is completed. Effectively resolves the “sleeping thread” issue present in the first approach.
-
-### 4. `LFStack_AtomicSharedPtr` (C++20)
-
-- **Method:** Using `std::atomic<std::shared_ptr<T>>`.
-- **Features:** The most modern approach. All complex logic related to memory management, memory barriers, and ABA prevention is delegated to the standard library. A great balance between safety and maintainability.
+- **AoS (Array of Structures):** Traditional object-oriented approach.
+- **SoA (Structure of Arrays):** Separation of data by components for efficient SIMD vectorization.
+- **AoSoA (Array of Structures of Arrays):** A hybrid approach balancing cache locality and vectorization efficiency.
 
 ---
 
-## 📊 Performance Results
+## Architectural Insights & Benchmarks
 
-Benchmarks are implemented using **Google Benchmark**.
+_Test setup: 16 × 1900 MHz CPU, L1 Data/Inst 32 KiB, L2 512 KiB, L3 16384 KiB._
 
-**Test Environment:**
-16 Cores, 1900 MHz | 8 Threads
+### 1. Impact of Memory Layout on Auto-Vectorization (SIMD)
 
-| Implementation              | Payload | Time (ns) | Throughput (ops/sec) |
-| :-------------------------- | :------ | :-------- | :------------------- |
-| **LFStack_ThreadCounter**   | Light   | 5591      | **1.44 M**           |
-| **LFStack_SplitRefCount**   | Light   | 6424      | 1.36 M               |
-| **LFStack_AtomicSharedPtr** | Light   | 6851      | 1.25 M               |
-| **LFStack_HazardPointer**   | Light   | 8391      | 925.4 k              |
-| ---                         | ---     | ---       | ---                  |
-| **LFStack_SplitRefCount**   | Heavy   | 8394      | **948.8 k**          |
-| **LFStack_ThreadCounter**   | Heavy   | 10050     | 819.4 k              |
-| **LFStack_AtomicSharedPtr** | Heavy   | 10736     | 674.6 k              |
-| **LFStack_HazardPointer**   | Heavy   | 13317     | 689.8 k              |
+The **SoA** layout is the clear leader for compute-intensive tasks. When calculating distances in 3D space, SoA achieves nearly **2.8× higher throughput** than the classic AoS due to ideal compiler auto-vectorization.
 
----
+| Memory Layout | Benchmark (Distance Calc, Float, 3D) | Items / Second   | Bytes / Second   |
+| :------------ | :----------------------------------- | :--------------- | :--------------- |
+| **AoS**       | `BM_AoS_Distance<SquaredEuclidean>`  | ~ 67.21 M/s      | ~ 2.00 GiB/s     |
+| **SoA**       | `BM_SoA_Distance<SquaredEuclidean>`  | **~ 187.90 M/s** | **~ 2.10 GiB/s** |
 
-## 🧐 Lock-Free vs Mutex: Performance Analysis
+### 2. Cache Locality in Reduction (Memory Bound)
 
-Many developers notice that a classic `std::mutex` can outperform lock-free implementations by a large margin (sometimes 10–20x) when using a small number of threads.
+For aggregation tasks (e.g., iterating and summing fields of a single entity), the **AoS** layout is more than **5.7× faster** than SoA. The CPU hardware prefetcher efficiently utilizes the L1 cache when sequentially reading contiguous memory of a single structure.
 
-**Why does this happen?**
+| Memory Layout | Benchmark      | Time (ns)   |
+| :------------ | :------------- | :---------- |
+| **AoS**       | `BM_AoS_Sum`   | **250,156** |
+| **SoA**       | `BM_SoA_Sum`   | 1,433,131   |
+| **AoSoA**     | `BM_AoSoA_Sum` | 1,584,360   |
 
-1. **Cache Contention:** Lock-free algorithms generate heavy cache traffic due to frequent `CAS` operations on a single shared location (`head`).
-2. **Instruction Overhead:** Proper memory management in lock-free environments requires multiple atomic operations per `pop`, whereas a mutex minimizes this overhead within a critical section.
-3. **Memory Reclamation:** The main overhead in these benchmarks comes not from the stack itself, but from the logic of **safe node reclamation**.
+### 3. Superiority of Algorithmic Complexity
 
-**When does lock-free win?**
-Lock-free solutions begin to outperform mutex-based approaches in **high-contention scenarios** (hundreds of threads), real-time systems (RTOS) where blocking high-priority threads is unacceptable, or under specific workloads where mutex wait time becomes a critical bottleneck.
+Memory optimization has its limits. Transitioning from linear scan **O(N²)** to spatial partitioning structures (KD-Tree) with **O(N log N)** complexity provides the most significant performance gains on large datasets.
+
+| Algorithm / Search      | N (Points) | Time (ns)      | Complexity |
+| :---------------------- | :--------- | :------------- | :--------- |
+| DBSCAN (BruteForce AoS) | 2,048      | 25,310,636     | O(N²)      |
+| DBSCAN (KD-Tree Batch)  | 2,048      | **22,460,938** | O(N log N) |
+| KD-Tree Search (Single) | 100,000    | **0.047**      | O(log N)   |
+
+_Note: KD-Tree achieves a throughput of over 21–22 million search queries per second for a tree with 100,000 elements._
+
+### 4. Memory Bandwidth Limitations
+
+Scaling brute-force algorithms with OpenMP (from 1 to 8 threads) showed minimal performance improvement in some cases. The bottleneck becomes memory bandwidth:
+
+- `BM_RadiusSearch_AoSoA_BruteForce (1 Thread)`: 40.14 M/s (612 MiB/s)
+- `BM_RadiusSearch_AoSoA_BruteForce (8 Threads)`: 43.15 M/s (658 MiB/s)
+
+CPU cores stall waiting for data from RAM, confirming the workload is **memory bandwidth-bound**.
